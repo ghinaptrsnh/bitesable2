@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bitesable – Cemilan Rumahan Palembang</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: { sans: ['Poppins', 'sans-serif'] },
+      colors: {
+        maroon: { 600: '#8A1C3A', 700: '#6D1228', 800: '#58101F', 900: '#3F0A16' },
+        coco:   { 400: '#A67B5B', 500: '#8B5E3C', 600: '#74492A', 700: '#5C3A21' },
+        latte:  { 50: '#FBF5EC', 100: '#F3E7D6', 200: '#E9D6BD', 300: '#DCC09B' }
+      }
+    }
+  }
+}
+</script>
+<style>
+  html { scroll-behavior: smooth; }
+  section[id] { scroll-margin-top: 84px; }
+  body { font-family: 'Poppins', sans-serif; color: #3b2314;
+         background: linear-gradient(180deg, #EBD9C3 0%, #DCC09B 100%); background-attachment: fixed; min-height: 100vh; }
+  .grad-btn { background: linear-gradient(135deg, #6D1228 0%, #8B5E3C 100%); color: #fff; transition: .25s; }
+  .grad-btn:hover { filter: brightness(1.15); transform: translateY(-1px); box-shadow: 0 8px 18px rgba(109,18,40,.3); }
+  .soft-btn { background: #E9D6BD; color: #5C3A21; transition: .25s; }
+  .soft-btn:hover { background: #DCC09B; transform: translateY(-1px); }
+  .card { background: #FBF5EC; border-radius: 1.25rem; box-shadow: 0 8px 24px rgba(92,58,33,.15); }
+  .card-hover { transition: .3s; }
+  .card-hover:hover { transform: translateY(-6px); box-shadow: 0 18px 36px rgba(109,18,40,.28); }
+  .field { background: #FFFBF5; border: 1.5px solid #D9BE9C; border-radius: .75rem; padding: .6rem .9rem; width: 100%; outline: none; transition: .2s; font-size: .9rem; }
+  .field:focus { border-color: #6D1228; box-shadow: 0 0 0 3px rgba(109,18,40,.15); }
+  .nav-link { padding: .5rem .95rem; border-radius: .75rem; font-weight: 500; transition: .2s; color: #F3E7D6; }
+  .nav-link:hover { background: rgba(255,255,255,.16); color: #fff; }
+  .hero-bg { background-image: linear-gradient(135deg, rgba(63,10,22,.88) 0%, rgba(109,18,40,.75) 45%, rgba(92,58,33,.7) 100%), url('assets/umkmbase.jpeg');
+             background-size: cover; background-position: center; }
+  .title-grad { background: linear-gradient(90deg, #F3E7D6, #E9B97A); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .fade-in { animation: fade .35s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .pill { display: inline-block; padding: .2rem .75rem; border-radius: 999px; font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+  .st-waiting { background: #FACC15; color: #422006; }
+  .st-approved { background: #16A34A; color: #fff; }
+  .st-declined { background: #DC2626; color: #fff; }
+  .stbtn { padding: .45rem 1rem; border-radius: .6rem; font-weight: 600; font-size: .8rem; border: 2px solid transparent; transition: .2s; }
+  .stbtn.waiting { border-color: #FACC15; color: #854d0e; background: #FEF9C3; }
+  .stbtn.approved { border-color: #16A34A; color: #166534; background: #DCFCE7; }
+  .stbtn.declined { border-color: #DC2626; color: #991B1B; background: #FEE2E2; }
+  .stbtn.waiting.on { background: #FACC15; color: #422006; }
+  .stbtn.approved.on { background: #16A34A; color: #fff; }
+  .stbtn.declined.on { background: #DC2626; color: #fff; }
+  .stbtn:hover { transform: translateY(-1px); }
+  .qty-btn { width: 2.4rem; height: 2.4rem; border-radius: .7rem; font-weight: 700; font-size: 1.2rem; transition: .2s; }
+  .chat-bubble { max-width: 85%; padding: .6rem .9rem; border-radius: 1rem; font-size: .88rem; line-height: 1.5; }
+  .scroll-thin::-webkit-scrollbar { width: 6px; } .scroll-thin::-webkit-scrollbar-thumb { background: #C9A57D; border-radius: 6px; }
+</style>
+</head>
+<body>
+
+<header id="nav" class="sticky top-0 z-50 shadow-lg"></header>
+<main id="page"></main>
+<div id="modal"></div>
+<div id="toasts" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 items-center px-4 w-full pointer-events-none"></div>
+
+<script>
+/* =========================================================
+   BITESABLE – Single File Web App (HTML + Tailwind CDN + JS)
+   Data disimpan di localStorage browser (tanpa server).
+   ========================================================= */
+
+const WA_NUMBER = '622375519309';
+const STORE_ADDRESS = 'Jl. Kebun Bunga No.12 Palembang, Sumatera Selatan.';
+const DEF_STOCK = { 'cireng': 170, 'cireng-frozen': 45, 'dimsum': 250, 'risol': 300 };
+
+const PRODUCTS = [
+  { id: 'cireng', name: 'Cireng', price: 12000, emoji: '🥟', img: 'assets/cireng.jpeg', unit: 'porsi', isi: '10 pcs per porsi',
+    desc: 'Cireng goreng renyah di luar, kenyal di dalam. Disajikan dengan bumbu rujak pedas manis yang bikin nagih.',
+    bahan: 'tepung tapioka, bawang putih, daun bawang, dan bumbu pilihan', rasa: 'gurih original dengan bumbu rujak pedas manis',
+    cara: 'Sajikan hangat langsung dari penggorengan. Jika sudah dingin, goreng sebentar 1–2 menit agar renyah kembali.',
+    simpan: 'suhu ruang maksimal 1 hari; untuk lebih awet simpan di kulkas hingga 2 hari' },
+  { id: 'cireng-frozen', name: 'Cireng Frozen', price: 35000, emoji: '❄️', img: 'assets/cireng-frozen.jpeg', unit: 'pack', isi: '25 pcs mentah per pack',
+    desc: 'Cireng siap goreng yang praktis disimpan di freezer. Tinggal goreng kapan saja saat ingin ngemil.',
+    bahan: 'tepung tapioka, bawang putih, daun bawang, dan bumbu pilihan', rasa: 'gurih original',
+    cara: 'Goreng langsung dari freezer (tanpa dicairkan) dengan api sedang selama 5–7 menit sampai kuning keemasan.',
+    simpan: 'freezer hingga 3 bulan; jangan dibekukan ulang setelah dicairkan' },
+  { id: 'dimsum', name: 'Dimsum', price: 22000, emoji: '🥠', img: 'assets/dimsum.jpeg', unit: 'porsi', isi: '6 pcs per porsi',
+    desc: 'Dimsum ayam yang lembut, juicy, dan gurih. Cocok untuk sarapan, camilan, atau bekal keluarga.',
+    bahan: 'daging ayam, tepung, wortel, bawang putih, dan kulit dimsum', rasa: 'gurih lembut, enak dicocol saus sambal',
+    cara: 'Kukus 10–15 menit dari kondisi dingin sampai panas merata, lalu sajikan dengan saus.',
+    simpan: 'kulkas 2 hari atau freezer hingga 1 bulan' },
+  { id: 'risol', name: 'Risol', price: 15000, emoji: '🌯', img: 'assets/risol.jpeg', unit: 'porsi', isi: '5 pcs per porsi',
+    desc: 'Risol berkulit tipis dengan isian ragout ayam dan sayuran, dibalut tepung panir yang garing.',
+    bahan: 'kulit risol, ayam, wortel, kentang, susu, dan tepung panir', rasa: 'gurih creamy dengan kulit krispi',
+    cara: 'Goreng dengan minyak panas api sedang 3–4 menit hingga kecokelatan. Jika sudah matang, panaskan di air fryer/oven 3 menit.',
+    simpan: 'suhu ruang 1 hari, kulkas 3 hari, atau freezer (mentah) 1 bulan' }
+];
+
+/* ---------- Helpers ---------- */
+const $ = s => document.querySelector(s);
+const load = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v === null || v === undefined ? d : v; } catch (e) { return d; } };
+const save = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+const rp = n => 'Rp ' + Number(n).toLocaleString('id-ID');
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const getP = id => PRODUCTS.find(p => p.id === id);
+const fmtDate = ts => new Date(ts).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+
+/* ---------- Seed data ---------- */
+(function seed() {
+  const users = load('bs_users', []);
+  if (!users.find(u => u.role === 'admin')) users.push({ name: 'Admin Bitesable', email: 'admin@bitesable.com', pass: '1234', role: 'admin' });
+  if (!users.find(u => u.email === 'user@bitesable.com')) users.push({ name: 'Customer Demo', email: 'user@bitesable.com', pass: '7890', role: 'user' });
+  save('bs_users', users);
+  if (!localStorage.getItem('bs_stock')) save('bs_stock', DEF_STOCK);
+  if (!localStorage.getItem('bs_orders')) save('bs_orders', []);
+})();
+
+/* ---------- State ---------- */
+let view = 'main';          // main | order | cart | payment | paid | delivery | final
+let authTab = 'login';      // login | register
+let authRole = 'user';      // user | admin
+let draft = { id: 'cireng', qty: 1, note: '' };
+let payStep = 'review';     // review | methods | detail
+let pay = { method: null, va: null };
+let checkout = { name: '', phone: '' };
+let lastOrderId = null;
+let delType = 'pickup';
+let delDriver = '';
+let delAddr = '';
+let chatLog = [{ role: 'bot', html: 'Halo! Aku <b>Bita</b>, asisten Bitesable 🍴<br>Tanya apa saja soal produk kami: harga, isi, stok, cara masak, cara simpan, atau minta rekomendasi sesuai budget kamu.' }];
+
+const me = () => { const s = load('bs_session', null); return s ? load('bs_users', []).find(u => u.email === s.email) || null : null; };
+const cartGet = email => load('bs_cart_' + email, []);
+const cartSet = (email, c) => save('bs_cart_' + email, c);
+const cartTotal = c => c.reduce((a, i) => a + i.price * i.qty, 0);
+
+/* ---------- UI helpers ---------- */
+function toast(msg, type) {
+  const el = document.createElement('div');
+  el.className = 'fade-in px-4 py-3 rounded-xl shadow-xl text-sm font-medium pointer-events-auto ' + (type === 'err' ? 'bg-red-700 text-white' : 'bg-maroon-800 text-latte-100');
+  el.textContent = msg;
+  $('#toasts').appendChild(el);
+  setTimeout(() => el.remove(), 3200);
+}
+function openModal(html) { $('#modal').innerHTML = `<div class="fixed inset-0 z-[90] bg-black/50 flex items-center justify-center p-4 fade-in"><div class="card p-6 w-full max-w-md">${html}</div></div>`; }
+function closeModal() { $('#modal').innerHTML = ''; }
+
+function go(v, anchor) {
+  view = v; closeModal(); render();
+  if (anchor) setTimeout(() => { const el = document.getElementById(anchor); if (el) el.scrollIntoView({ behavior: 'smooth' }); }, 40);
+  else window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function navTo(id) {
+  const u = me(); if (u && u.role === 'admin') return false;
+  const mm = $('#mmenu'); if (mm) mm.classList.add('hidden');
+  if (view !== 'main') { view = 'main'; render(); }
+  setTimeout(() => { const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: 'smooth' }); history.replaceState(null, '', '#' + id); }, 40);
+  return false;
+}
+function toggleMenu() { $('#mmenu').classList.toggle('hidden'); }
+
+/* =========================================================
+   RENDER
+   ========================================================= */
+function render() {
+  const u = me();
+  renderNav(u);
+  const page = $('#page');
+  if (u && u.role === 'admin') { page.innerHTML = adminView(); return; }
+  if (view !== 'main' && !u) view = 'main';
+  if (view === 'main') { page.innerHTML = mainView(u); renderAuth(); renderRiwayat(); renderChat(); return; }
+  const map = { order: orderView, cart: cartView, payment: paymentView, paid: paidView, delivery: deliveryView, final: finalView };
+  page.innerHTML = (map[view] || mainView)(u) + footerHTML();
+}
+
+function renderNav(u) {
+  const admin = u && u.role === 'admin';
+  const cartN = u && !admin ? cartGet(u.email).length : 0;
+  const links = admin ? '' : `
+    <a href="#home" onclick="return navTo('home')" class="nav-link">Home</a>
+    <a href="#products" onclick="return navTo('products')" class="nav-link">Products</a>
+    <a href="#about" onclick="return navTo('about')" class="nav-link">About Us</a>`;
+  let right = '';
+  if (admin) {
+    right = `<span class="hidden sm:inline text-latte-100 text-sm">🛠️ Panel Admin · ${esc(u.name)}</span>
+      <button onclick="logout()" class="px-4 py-2 rounded-xl bg-latte-100 text-maroon-800 font-semibold text-sm hover:bg-latte-200 transition">Keluar</button>`;
+  } else if (u) {
+    right = `<span class="hidden lg:inline text-latte-100 text-sm mr-1">👤 ${esc(u.name.split(' ')[0])}</span>
+      <button onclick="go('cart')" class="relative px-4 py-2 rounded-xl bg-latte-100 text-maroon-800 font-semibold text-sm hover:bg-latte-200 transition">🛒 Keranjang${cartN ? `<span class="absolute -top-2 -right-2 bg-yellow-400 text-yellow-950 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">${cartN}</span>` : ''}</button>
+      <button onclick="logout()" class="px-4 py-2 rounded-xl border border-latte-300/60 text-latte-100 font-semibold text-sm hover:bg-white/10 transition">Keluar</button>`;
+  } else {
+    right = `<button onclick="focusAuth()" class="px-5 py-2 rounded-xl bg-latte-100 text-maroon-800 font-semibold text-sm hover:bg-latte-200 transition">Masuk / Daftar</button>`;
+  }
+  const mobileExtra = u && !admin ? `<a href="#riwayat" onclick="return navTo('riwayat')" class="nav-link block">📜 Riwayat Pesanan</a>` : '';
+  $('#nav').innerHTML = `
+  <div class="bg-gradient-to-r from-maroon-900 via-maroon-700 to-coco-700">
+    <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
+      <a href="#home" onclick="${admin ? 'return false' : "return navTo('home')"}" class="flex items-center gap-2 text-xl font-extrabold text-latte-100 tracking-wide">
+        <span class="text-2xl">🍴</span> Bitesable
+      </a>
+      <nav class="hidden md:flex items-center gap-1">${links}${mobileExtra}</nav>
+      <div class="flex items-center gap-2">${right}
+        ${admin ? '' : `<button onclick="toggleMenu()" class="md:hidden text-latte-100 text-2xl px-2" aria-label="Menu">☰</button>`}
+      </div>
+    </div>
+    <div id="mmenu" class="hidden md:hidden border-t border-white/10 px-4 pb-3 pt-2 space-y-1 bg-maroon-900/40">${links}${mobileExtra}</div>
+  </div>`;
+}
+
+function footerHTML() {
+  return `<footer class="mt-10 bg-gradient-to-r from-maroon-900 via-maroon-700 to-coco-700 text-latte-100 py-6 text-center text-sm">
+    <p class="font-bold text-base">🍴 Bitesable</p>
+    <p class="opacity-80">© ${new Date().getFullYear()} Bitesable. All rights reserved.</p></footer>`;
+}
+
+/* =========================================================
+   HALAMAN UTAMA (Home, Products, AI, About)
+   ========================================================= */
+function mainView(u) {
+  const stock = load('bs_stock', DEF_STOCK);
+  const welcome = u ? `
+    <div class="card p-7 w-full max-w-md mx-auto lg:ml-auto text-center fade-in">
+      <div class="text-5xl mb-2">👋</div>
+      <p class="text-sm text-coco-500 font-medium">Berhasil masuk sebagai</p>
+      <h3 class="text-2xl font-bold text-maroon-700 mb-1">${esc(u.name)}</h3>
+      <p class="text-sm text-coco-600 mb-5">${esc(u.email)}</p>
+      <div class="grid grid-cols-2 gap-3">
+        <button onclick="navTo('products')" class="grad-btn py-3 rounded-xl font-semibold text-sm">Pilih Produk</button>
+        <button onclick="go('cart')" class="soft-btn py-3 rounded-xl font-semibold text-sm">🛒 Keranjang</button>
+      </div>
+      <button onclick="navTo('riwayat')" class="soft-btn w-full mt-3 py-3 rounded-xl font-semibold text-sm">📜 Riwayat Pemesanan</button>
+    </div>` : `<div id="authBox" class="w-full"></div>`;
+
+  const cards = PRODUCTS.map(p => {
+    const s = stock[p.id] || 0;
+    return `<div class="card card-hover overflow-hidden flex flex-col">
+      <div class="relative h-48 bg-gradient-to-br from-maroon-700 via-maroon-600 to-coco-500 flex items-center justify-center text-7xl">
+        <span>${p.emoji}</span>
+        <img src="${p.img}" alt="${p.name}" class="absolute inset-0 w-full h-full object-cover" onerror="this.remove()">
+        <span class="absolute top-3 right-3 pill ${s > 0 ? 'bg-latte-100 text-maroon-700' : 'bg-red-600 text-white'}">${s > 0 ? 'Stok ' + s : 'Habis'}</span>
+      </div>
+      <div class="p-5 flex flex-col flex-1">
+        <h3 class="text-lg font-bold text-maroon-700">${p.name}</h3>
+        <p class="text-xs text-coco-500 mb-2">${p.isi}</p>
+        <p class="text-sm text-coco-700 mb-4 flex-1">${p.desc}</p>
+        <div class="flex items-center justify-between gap-2">
+          <span class="font-bold text-lg text-maroon-700">${rp(p.price)}</span>
+          <button ${s > 0 ? '' : 'disabled'} onclick="startOrder('${p.id}')" class="grad-btn px-4 py-2 rounded-xl text-sm font-semibold ${s > 0 ? '' : 'opacity-50 cursor-not-allowed'}">Pesan</button>
+        </div>
+      </div></div>`;
+  }).join('');
+
+  return `
+  <section id="home">
+    <div class="hero-bg">
+      <div class="max-w-7xl mx-auto px-4 py-14 lg:py-24 grid lg:grid-cols-2 gap-10 items-center">
+        <div class="text-latte-100 text-center lg:text-left">
+          <span class="inline-block bg-white/15 backdrop-blur px-4 py-1 rounded-full text-sm mb-4">🌶️ UMKM Palembang · Cemilan Rumahan</span>
+          <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight mb-4"><span class="title-grad">Bitesable</span><br>Gigitan Kecil, Bahagia Besar</h1>
+          <p class="text-base sm:text-lg opacity-90 mb-7 max-w-xl mx-auto lg:mx-0">Cireng, cireng frozen, dimsum, dan risol buatan rumahan. Dibuat segar setiap hari dengan bahan pilihan, siap menemani ngemil, arisan, sampai acara keluarga.</p>
+          <div class="flex flex-wrap gap-3 justify-center lg:justify-start">
+            <button onclick="navTo('products')" class="px-6 py-3 rounded-xl bg-latte-100 text-maroon-800 font-semibold hover:bg-white transition hover:-translate-y-0.5">Lihat Produk</button>
+            <button onclick="navTo('ai')" class="px-6 py-3 rounded-xl border-2 border-latte-100/70 text-latte-100 font-semibold hover:bg-white/10 transition hover:-translate-y-0.5">💬 Tanya Bita (AI)</button>
+          </div>
+        </div>
+        ${welcome}
+      </div>
+    </div>
+    ${u ? `<div id="riwayat" class="max-w-5xl mx-auto px-4 pt-10 scroll-mt-24">
+      <div class="card p-5 sm:p-7"><h2 class="text-2xl font-bold text-maroon-700 mb-1">📜 Riwayat Pemesanan</h2>
+      <p class="text-sm text-coco-500 mb-4">Status pesanan diperbarui otomatis saat admin mengonfirmasi.</p>
+      <div id="riwayatBox" class="space-y-3"></div></div></div>` : ''}
+  </section>
+
+  <section id="products" class="max-w-7xl mx-auto px-4 py-14">
+    <div class="text-center mb-10">
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-maroon-700">Produk Kami</h2>
+      <div class="w-24 h-1.5 mx-auto mt-3 rounded-full bg-gradient-to-r from-maroon-700 to-coco-400"></div>
+      <p class="text-coco-600 mt-4">Pilih favoritmu, tambahkan ke keranjang, dan bayar dengan mudah.</p>
+    </div>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">${cards}</div>
+  </section>
+
+  <section id="ai" class="max-w-3xl mx-auto px-4 pb-14">
+    <div class="card overflow-hidden">
+      <div class="bg-gradient-to-r from-maroon-800 to-coco-600 text-latte-100 px-6 py-4">
+        <h2 class="text-xl font-bold">💬 Tanya Bita – Asisten AI Bitesable</h2>
+        <p class="text-sm opacity-85">Jawaban disesuaikan dengan pertanyaanmu tentang produk.</p>
+      </div>
+      <div id="chatBox" class="h-80 overflow-y-auto scroll-thin p-4 space-y-3 bg-latte-100"></div>
+      <div class="px-4 pt-3 flex flex-wrap gap-2">
+        ${['Berapa harga dimsum?', 'Cara masak cireng frozen?', 'Stok risol masih ada?', 'Budget 50rb enaknya beli apa?'].map(q => `<button onclick="askChip(this)" class="soft-btn text-xs px-3 py-1.5 rounded-full">${q}</button>`).join('')}
+      </div>
+      <form onsubmit="return sendChat()" class="p-4 flex gap-2">
+        <input id="chatIn" class="field" placeholder="Ketik pertanyaanmu di sini..." autocomplete="off">
+        <button class="grad-btn px-5 rounded-xl font-semibold text-sm">Kirim</button>
+      </form>
+    </div>
+  </section>
+
+  <section id="about" class="bg-gradient-to-br from-maroon-800 via-maroon-700 to-coco-700 text-latte-100">
+    <div class="max-w-7xl mx-auto px-4 py-14 grid lg:grid-cols-2 gap-10 items-center">
+      <div>
+        <h2 class="text-3xl sm:text-4xl font-extrabold mb-2">Tentang Kami</h2>
+        <div class="w-24 h-1.5 rounded-full bg-gradient-to-r from-latte-100 to-coco-400 mb-5"></div>
+        <p class="italic text-xl text-yellow-200 mb-4">“Gigitan Kecil, Bahagia Besar.”</p>
+        <p class="opacity-90 mb-3"><b>Bitesable</b> adalah usaha mikro kecil menengah (UMKM) asal Palembang yang menyajikan cemilan rumahan dengan rasa yang konsisten dan harga bersahabat. Lewat web pemesanan sederhana ini, kamu bisa memilih menu, mencatat permintaan khusus, membayar nontunai, lalu memilih diambil sendiri atau diantar.</p>
+        <p class="opacity-90 mb-5">Kami percaya makanan UMKM yang baik itu dibuat dari bahan yang jelas, diolah bersih, dikemas rapi, dan dilayani dengan ramah. Setiap pesanan kami siapkan dengan sepenuh hati.</p>
+        <div class="bg-white/10 rounded-2xl p-5 space-y-2 text-sm">
+          <p>📍 <b>Alamat:</b> ${STORE_ADDRESS}</p>
+          <p>📱 <b>WhatsApp:</b> <a class="underline" href="https://wa.me/${WA_NUMBER}" target="_blank">+${WA_NUMBER}</a></p>
+          <p>🕘 <b>Jam operasional:</b> Setiap hari, 08.00 – 20.00 WIB</p>
+        </div>
+      </div>
+      <div class="rounded-2xl overflow-hidden shadow-2xl border-4 border-latte-100/30 h-72 lg:h-96 bg-latte-100">
+        <iframe title="Lokasi Bitesable" class="w-full h-full" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+          src="https://maps.google.com/maps?q=${encodeURIComponent('Jl. Kebun Bunga No.12 Palembang')}&output=embed"></iframe>
+      </div>
+    </div>
+  </section>
+  ${footerHTML()}`;
+}
+
+/* ---------- Auth ---------- */
+function renderAuth() {
+  const box = $('#authBox'); if (!box) return;
+  const reg = authTab === 'register';
+  box.innerHTML = `
+  <div class="card p-6 sm:p-7 w-full max-w-md mx-auto lg:ml-auto fade-in">
+    <h3 class="text-xl font-bold text-maroon-700 mb-1">${reg ? 'Buat Akun Baru' : 'Masuk ke Bitesable'}</h3>
+    <p class="text-xs text-coco-500 mb-4">${reg ? 'Daftar dengan email (Gmail juga bisa) untuk mulai memesan.' : 'Masuk sebagai customer atau admin dengan email.'}</p>
+    <div class="flex bg-latte-200 rounded-xl p-1 mb-4">
+      <button onclick="setAuthTab('login')" class="flex-1 py-2 rounded-lg text-sm font-semibold transition ${!reg ? 'grad-btn' : 'text-coco-700'}">Masuk</button>
+      <button onclick="setAuthTab('register')" class="flex-1 py-2 rounded-lg text-sm font-semibold transition ${reg ? 'grad-btn' : 'text-coco-700'}">Daftar</button>
+    </div>
+    ${!reg ? `<div class="grid grid-cols-2 gap-2 mb-4 text-sm">
+      <button onclick="setAuthRole('user')" class="py-2 rounded-lg font-semibold border-2 transition ${authRole === 'user' ? 'border-maroon-700 bg-maroon-700/10 text-maroon-700' : 'border-latte-300 text-coco-600'}">🙋 Customer</button>
+      <button onclick="setAuthRole('admin')" class="py-2 rounded-lg font-semibold border-2 transition ${authRole === 'admin' ? 'border-maroon-700 bg-maroon-700/10 text-maroon-700' : 'border-latte-300 text-coco-600'}">🛠️ Admin</button>
+    </div>` : ''}
+    <form onsubmit="return ${reg ? 'doRegister()' : 'doLogin()'}" class="space-y-3">
+      ${reg ? `<input id="aName" class="field" placeholder="Nama lengkap" required>` : ''}
+      <input id="aEmail" type="email" class="field" placeholder="Email (contoh: nama@gmail.com)" required>
+      <input id="aPass" type="password" class="field" placeholder="Password" required>
+      ${reg ? `<input id="aPass2" type="password" class="field" placeholder="Ulangi password" required>` : ''}
+      <p id="aErr" class="text-sm text-red-700 font-medium hidden"></p>
+      <button class="grad-btn w-full py-3 rounded-xl font-semibold">${reg ? 'Buat Akun & Masuk' : 'Masuk'}</button>
+    </form>
+    ${!reg ? `<div class="mt-4 text-xs text-coco-600 bg-latte-200 rounded-xl p-3 leading-relaxed">
+      <b>Akun demo</b><br>Admin: admin@bitesable.com / 1234<br>Customer: user@bitesable.com / 7890</div>` : ''}
+  </div>`;
+}
+function setAuthTab(t) { authTab = t; renderAuth(); }
+function setAuthRole(r) { authRole = r; renderAuth(); }
+function focusAuth() { navTo('home'); }
+function authErr(msg) { const e = $('#aErr'); if (e) { e.textContent = msg; e.classList.remove('hidden'); } return false; }
+
+function doLogin() {
+  const email = $('#aEmail').value.trim().toLowerCase(), pass = $('#aPass').value;
+  const u = load('bs_users', []).find(x => x.email === email);
+  if (!u || u.pass !== pass) return authErr('Email atau password salah.');
+  if (authRole === 'admin' && u.role !== 'admin') return authErr('Akun ini bukan akun admin.');
+  if (authRole === 'user' && u.role === 'admin') return authErr('Ini akun admin. Pilih tab "Admin" untuk masuk.');
+  save('bs_session', { email }); view = 'main'; render(); window.scrollTo({ top: 0 });
+  toast('Selamat datang, ' + u.name + '!');
+  return false;
+}
+function doRegister() {
+  const name = $('#aName').value.trim(), email = $('#aEmail').value.trim().toLowerCase(), p1 = $('#aPass').value, p2 = $('#aPass2').value;
+  if (name.length < 2) return authErr('Nama minimal 2 karakter.');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return authErr('Format email tidak valid.');
+  if (p1.length < 4) return authErr('Password minimal 4 karakter.');
+  if (p1 !== p2) return authErr('Konfirmasi password tidak sama.');
+  const users = load('bs_users', []);
+  if (users.find(x => x.email === email)) return authErr('Email sudah terdaftar. Silakan masuk.');
+  users.push({ name, email, pass: p1, role: 'user' }); save('bs_users', users);
+  save('bs_session', { email }); view = 'main'; render(); window.scrollTo({ top: 0 });
+  toast('Akun berhasil dibuat. Selamat datang, ' + name + '!');
+  return false;
+}
+function logout() {
+  localStorage.removeItem('bs_session'); view = 'main'; authTab = 'login'; authRole = 'user'; render(); window.scrollTo({ top: 0 });
+  toast('Kamu sudah keluar.');
+}
+
+/* ---------- Riwayat (user) ---------- */
+function statusPill(s) { return `<span class="pill st-${s}">${s}</span>`; }
+function renderRiwayat() {
+  const box = $('#riwayatBox'); const u = me(); if (!box || !u) return;
+  const orders = load('bs_orders', []).filter(o => o.email === u.email).sort((a, b) => b.createdAt - a.createdAt);
+  if (!orders.length) { box.innerHTML = `<p class="text-sm text-coco-500 py-4 text-center">Belum ada pesanan. Yuk pilih produk favoritmu! 😋</p>`; return; }
+  box.innerHTML = orders.map(o => {
+    let info = '';
+    if (!o.delivery) info = `<p class="text-xs text-coco-500">Pilih metode pengiriman untuk melanjutkan.</p>`;
+    else if (o.status === 'approved') info = `<p class="text-sm text-green-700 font-semibold">✅ Pesanan disetujui. ${o.delivery === 'pickup' ? 'Bisa diambil' : 'Akan diantar'} pada jam ${esc(o.time || '-')} WIB.</p>`;
+    else if (o.status === 'declined') info = `<p class="text-sm text-red-700 font-semibold">❌ Maaf, pesanan ditolak oleh admin. Hubungi WhatsApp untuk info lebih lanjut.</p>`;
+    else info = `<p class="text-sm text-yellow-700 font-semibold">⏳ Menunggu konfirmasi admin${o.delivery === 'pickup' ? ' untuk jam pickup' : ' untuk jadwal pengantaran'}.</p>`;
+    return `<div class="bg-latte-100 rounded-xl p-4 border border-latte-300 fade-in">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+        <div><span class="font-bold text-maroon-700">#${o.id}</span> <span class="text-xs text-coco-500">· ${fmtDate(o.createdAt)}</span></div>
+        ${statusPill(o.status)}
+      </div>
+      <ul class="text-sm text-coco-700 mb-2">${o.items.map(i => `<li>• ${esc(i.name)} × ${i.qty}${i.note ? ` <span class="text-coco-500 italic">(${esc(i.note)})</span>` : ''}</li>`).join('')}</ul>
+      <div class="flex flex-wrap justify-between gap-2 text-xs text-coco-600 mb-2">
+        <span>Total: <b class="text-maroon-700">${rp(o.total)}</b> · ${esc(o.methodLabel)}</span>
+        <span>${o.delivery === 'pickup' ? '🏪 Pickup' : o.delivery === 'delivery' ? '🛵 Delivery (' + esc(o.driver) + ')' : '—'}</span>
+      </div>${info}</div>`;
+  }).join('');
+}
+
+/* =========================================================
+   ALUR PEMESANAN
+   ========================================================= */
+function startOrder(id) {
+  const u = me();
+  if (!u) { toast('Silakan masuk atau daftar dulu untuk memesan.', 'err'); focusAuth(); return; }
+  draft = { id, qty: 1, note: '' }; go('order');
+}
+function syncDraft() { const n = $('#dnote'); if (n) draft.note = n.value; const q = $('#dqty'); if (q) draft.qty = parseInt(q.value) || 1; }
+function setDraftProduct(id) { syncDraft(); draft.id = id; draft.qty = 1; draft.note = ''; render(); }
+function draftQty(d) {
+  syncDraft();
+  const stock = (load('bs_stock', DEF_STOCK)[draft.id]) || 0;
+  draft.qty = Math.max(1, Math.min(stock || 1, draft.qty + d)); render();
+}
+function addDraft() {
+  syncDraft();
+  const u = me(); const p = getP(draft.id); const stock = load('bs_stock', DEF_STOCK)[p.id] || 0;
+  const cart = cartGet(u.email);
+  const exist = cart.find(i => i.id === p.id && (i.note || '') === (draft.note.trim()));
+  const inCart = cart.filter(i => i.id === p.id).reduce((a, i) => a + i.qty, 0);
+  if (draft.qty < 1) return toast('Jumlah minimal 1.', 'err');
+  if (inCart + draft.qty > stock) return toast(`Stok ${p.name} hanya ${stock}. Di keranjang sudah ada ${inCart}.`, 'err');
+  if (exist) exist.qty += draft.qty; else cart.push({ id: p.id, name: p.name, price: p.price, qty: draft.qty, note: draft.note.trim() });
+  cartSet(u.email, cart);
+  const added = draft.qty;
+  draft = { id: draft.id, qty: 1, note: '' };
+  renderNav(u);
+  openModal(`<div class="text-center">
+    <div class="text-5xl mb-2">✅</div>
+    <h3 class="text-xl font-bold text-maroon-700 mb-1">Ditambahkan ke keranjang</h3>
+    <p class="text-sm text-coco-600 mb-5">${p.name} × ${added} masuk keranjang. Mau pesan makanan lain?</p>
+    <div class="grid gap-2">
+      <button onclick="closeModal();window.scrollTo({top:0,behavior:'smooth'})" class="grad-btn py-3 rounded-xl font-semibold">➕ Pilih makanan lain</button>
+      <button onclick="go('cart')" class="soft-btn py-3 rounded-xl font-semibold">🛒 Buka keranjang</button>
+    </div></div>`);
+}
+
+function orderView(u) {
+  const p = getP(draft.id); const stock = load('bs_stock', DEF_STOCK)[p.id] || 0;
+  return `<section class="max-w-4xl mx-auto px-4 py-10 fade-in">
+    <button onclick="go('main','products')" class="text-sm text-maroon-700 font-semibold mb-4 hover:underline">← Kembali ke produk</button>
+    <div class="card p-5 sm:p-8">
+      <h2 class="text-2xl font-bold text-maroon-700 mb-4">Form Pemesanan</h2>
+      <p class="text-sm text-coco-600 mb-2">Pilih produk:</p>
+      <div class="flex flex-wrap gap-2 mb-6">
+        ${PRODUCTS.map(x => `<button onclick="setDraftProduct('${x.id}')" class="px-4 py-2 rounded-full text-sm font-semibold border-2 transition ${x.id === p.id ? 'grad-btn border-transparent' : 'border-latte-300 text-coco-700 hover:bg-latte-200'}">${x.emoji} ${x.name}</button>`).join('')}
+      </div>
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="relative h-56 md:h-full min-h-[14rem] rounded-2xl overflow-hidden bg-gradient-to-br from-maroon-700 to-coco-500 flex items-center justify-center text-8xl">
+          <span>${p.emoji}</span><img src="${p.img}" alt="${p.name}" class="absolute inset-0 w-full h-full object-cover" onerror="this.remove()">
+        </div>
+        <div>
+          <h3 class="text-xl font-bold text-maroon-700">${p.name}</h3>
+          <p class="text-sm text-coco-600 mb-2">${p.desc}</p>
+          <p class="text-2xl font-extrabold text-maroon-700 mb-1">${rp(p.price)} <span class="text-sm font-medium text-coco-500">/ ${p.unit}</span></p>
+          <p class="text-xs text-coco-500 mb-4">${p.isi} · Stok tersedia: <b>${stock}</b></p>
+          <label class="text-sm font-semibold text-coco-700">Jumlah</label>
+          <div class="flex items-center gap-2 mb-4 mt-1">
+            <button onclick="draftQty(-1)" class="qty-btn soft-btn">−</button>
+            <input id="dqty" type="number" min="1" max="${stock}" value="${draft.qty}" onchange="draftQty(0)" class="field text-center font-bold" style="width:5.5rem">
+            <button onclick="draftQty(1)" class="qty-btn grad-btn">+</button>
+          </div>
+          <label class="text-sm font-semibold text-coco-700">Keterangan / catatan</label>
+          <textarea id="dnote" rows="3" class="field mt-1 mb-3" placeholder="Contoh: bumbu pedasnya dipisah, jangan terlalu gosong...">${esc(draft.note)}</textarea>
+          <p class="text-sm text-coco-600 mb-4">Subtotal: <b class="text-maroon-700 text-lg">${rp(p.price * draft.qty)}</b></p>
+          <button ${stock > 0 ? '' : 'disabled'} onclick="addDraft()" class="grad-btn w-full py-3 rounded-xl font-semibold ${stock > 0 ? '' : 'opacity-50'}">🛒 Tambahkan ke Keranjang</button>
+        </div>
+      </div>
+    </div></section>`;
+}
+
+/* ---------- Keranjang ---------- */
+function cartQty(i, d) {
+  const u = me(); const c = cartGet(u.email); const it = c[i]; if (!it) return;
+  const stock = load('bs_stock', DEF_STOCK)[it.id] || 0;
+  const others = c.filter((x, k) => x.id === it.id && k !== i).reduce((a, x) => a + x.qty, 0);
+  const nq = it.qty + d;
+  if (nq < 1) return;
+  if (nq + others > stock) return toast(`Stok ${it.name} hanya ${stock}.`, 'err');
+  it.qty = nq; cartSet(u.email, c); render();
+}
+function cartNote(i, val) { const u = me(); const c = cartGet(u.email); if (c[i]) { c[i].note = val; cartSet(u.email, c); } }
+function cartDel(i) { const u = me(); const c = cartGet(u.email); c.splice(i, 1); cartSet(u.email, c); render(); }
+function cartView(u) {
+  const c = cartGet(u.email);
+  if (!c.length) return `<section class="max-w-2xl mx-auto px-4 py-16 text-center fade-in"><div class="card p-10">
+    <div class="text-6xl mb-3">🛒</div><h2 class="text-2xl font-bold text-maroon-700 mb-2">Keranjang masih kosong</h2>
+    <p class="text-coco-600 mb-6">Yuk pilih cemilan favoritmu dulu.</p>
+    <button onclick="go('main','products')" class="grad-btn px-6 py-3 rounded-xl font-semibold">Lihat Produk</button></div></section>`;
+  return `<section class="max-w-4xl mx-auto px-4 py-10 fade-in">
+    <button onclick="go('main','products')" class="text-sm text-maroon-700 font-semibold mb-4 hover:underline">← Tambah makanan lain</button>
+    <div class="card p-5 sm:p-8">
+      <h2 class="text-2xl font-bold text-maroon-700 mb-5">🛒 Keranjang Pesanan</h2>
+      <div class="space-y-4">${c.map((it, i) => { const p = getP(it.id); return `
+        <div class="bg-latte-100 border border-latte-300 rounded-2xl p-4">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3"><span class="text-3xl">${p.emoji}</span><div><p class="font-bold text-maroon-700">${it.name}</p><p class="text-xs text-coco-500">${rp(it.price)} / ${p.unit}</p></div></div>
+            <div class="flex items-center gap-2">
+              <button onclick="cartQty(${i},-1)" class="qty-btn soft-btn">−</button>
+              <span class="w-10 text-center font-bold">${it.qty}</span>
+              <button onclick="cartQty(${i},1)" class="qty-btn grad-btn">+</button>
+            </div>
+            <div class="flex items-center gap-3"><b class="text-maroon-700">${rp(it.price * it.qty)}</b>
+              <button onclick="cartDel(${i})" class="text-red-700 text-sm font-semibold hover:underline">Hapus</button></div>
+          </div>
+          <input class="field mt-3" value="${esc(it.note)}" oninput="cartNote(${i}, this.value)" placeholder="Keterangan / permintaan khusus untuk pesanan ini">
+        </div>`; }).join('')}</div>
+      <div class="flex items-center justify-between mt-6 pt-4 border-t border-latte-300">
+        <span class="font-semibold text-coco-700">Total</span><span class="text-2xl font-extrabold text-maroon-700">${rp(cartTotal(c))}</span>
+      </div>
+      <div class="grid sm:grid-cols-2 gap-3 mt-5">
+        <button onclick="go('order')" class="soft-btn py-3 rounded-xl font-semibold">➕ Pesan makanan lain</button>
+        <button onclick="toPayment()" class="grad-btn py-3 rounded-xl font-semibold">Lanjut Pembayaran →</button>
+      </div>
+    </div></section>`;
+}
+function toPayment() {
+  const u = me(); if (!cartGet(u.email).length) return;
+  checkout.name = checkout.name || u.name; payStep = 'review'; pay = { method: null, va: null }; go('payment');
+}
+
+/* ---------- Pembayaran ---------- */
+const METHODS = {
+  qris: { label: 'QRIS', icon: '📱' },
+  mandiri: { label: 'VA Bank Mandiri', icon: '🏦', prefix: '88608' },
+  bca: { label: 'VA Bank BCA', icon: '🏦', prefix: '39358' },
+  bni: { label: 'VA Bank BNI', icon: '🏦', prefix: '8808' },
+  bri: { label: 'VA Bank BRI', icon: '🏦', prefix: '26215' }
+};
+function startPay() {
+  const n = $('#cName').value.trim(), ph = $('#cPhone').value.trim();
+  if (n.length < 2) return toast('Isi nama penerima dulu.', 'err');
+  if (ph.replace(/\D/g, '').length < 8) return toast('Isi nomor HP/WhatsApp yang valid.', 'err');
+  checkout = { name: n, phone: ph }; payStep = 'methods'; render();
+}
+function chooseMethod(m) {
+  pay.method = m;
+  pay.va = METHODS[m].prefix ? METHODS[m].prefix + String(Math.floor(Math.random() * 1e11)).padStart(11, '0').slice(0, 11) : null;
+  payStep = 'detail'; render(); window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function qrSvg(seed) {
+  const n = 25; let h = 7; for (const c of seed) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  const rnd = () => (h = (h * 1664525 + 1013904223) >>> 0) / 4294967296;
+  const finder = (x, y) => (x < 7 && y < 7) || (x >= n - 7 && y < 7) || (x < 7 && y >= n - 7);
+  let r = '';
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    let on;
+    if (finder(x, y)) { const fx = x % (n - 7) , fy = y % (n - 7); const lx = x < 7 ? x : x - (n - 7), ly = y < 7 ? y : y - (n - 7);
+      on = lx === 0 || lx === 6 || ly === 0 || ly === 6 || (lx >= 2 && lx <= 4 && ly >= 2 && ly <= 4); }
+    else on = rnd() > 0.5;
+    if (on) r += `<rect x="${x}" y="${y}" width="1" height="1"/>`;
+  }
+  return `<svg viewBox="-1 -1 ${n + 2} ${n + 2}" class="w-52 h-52 bg-white rounded-xl p-2" fill="#3F0A16">${r}</svg>`;
+}
+function paymentView(u) {
+  const c = cartGet(u.email); const total = cartTotal(c);
+  const summary = `<div class="bg-latte-100 border border-latte-300 rounded-2xl p-4 mb-5">
+    <p class="font-semibold text-maroon-700 mb-2">Ringkasan pesanan</p>
+    ${c.map(i => `<div class="flex justify-between text-sm py-1"><span>${esc(i.name)} × ${i.qty}${i.note ? `<br><span class="text-xs italic text-coco-500">${esc(i.note)}</span>` : ''}</span><b>${rp(i.price * i.qty)}</b></div>`).join('')}
+    <div class="flex justify-between pt-2 mt-2 border-t border-latte-300 font-bold text-maroon-700"><span>Total bayar</span><span>${rp(total)}</span></div></div>`;
+  let body = '';
+  if (payStep === 'review') body = `${summary}
+    <div class="grid sm:grid-cols-2 gap-3 mb-5">
+      <div><label class="text-sm font-semibold text-coco-700">Nama penerima</label><input id="cName" class="field mt-1" value="${esc(checkout.name)}"></div>
+      <div><label class="text-sm font-semibold text-coco-700">No. HP / WhatsApp</label><input id="cPhone" class="field mt-1" value="${esc(checkout.phone)}" placeholder="08xxxxxxxxxx"></div>
+    </div>
+    <p class="text-sm font-semibold text-coco-700 mb-2">Metode pembayaran</p>
+    <button onclick="startPay()" class="grad-btn w-full py-4 rounded-xl font-bold text-lg">💳 Pembayaran Nontunai</button>`;
+  else if (payStep === 'methods') body = `${summary}
+    <p class="text-sm font-semibold text-coco-700 mb-3">Pilih QRIS atau Virtual Account:</p>
+    <div class="grid sm:grid-cols-2 gap-3">${Object.keys(METHODS).map(k => `<button onclick="chooseMethod('${k}')" class="card-hover bg-latte-100 border-2 border-latte-300 hover:border-maroon-700 rounded-xl p-4 text-left font-semibold text-maroon-700 flex items-center gap-3"><span class="text-2xl">${METHODS[k].icon}</span>${METHODS[k].label}</button>`).join('')}</div>
+    <button onclick="payStep='review';render()" class="text-sm text-coco-600 mt-4 hover:underline">← Kembali</button>`;
+  else {
+    const m = METHODS[pay.method];
+    body = `<div class="text-center">
+      <p class="text-sm text-coco-600">Metode: <b class="text-maroon-700">${m.label}</b></p>
+      <p class="text-3xl font-extrabold text-maroon-700 my-2">${rp(total)}</p>
+      ${pay.method === 'qris'
+        ? `<div class="flex justify-center my-4">${qrSvg('BS' + total + checkout.phone)}</div><p class="text-sm text-coco-600">Scan QRIS ini lewat m-banking atau e-wallet.</p>`
+        : `<div class="bg-latte-100 border-2 border-dashed border-maroon-700 rounded-2xl p-5 my-4 inline-block min-w-[16rem]">
+            <p class="text-xs text-coco-500 mb-1">Nomor Virtual Account</p>
+            <p class="text-2xl font-extrabold tracking-wider text-maroon-700 break-all">${pay.va}</p>
+            <button onclick="navigator.clipboard&&navigator.clipboard.writeText('${pay.va}');toast('Nomor VA disalin')" class="text-xs text-maroon-700 font-semibold mt-2 hover:underline">Salin nomor</button></div>`}
+      <p class="text-xs text-coco-500 mt-2 mb-5">⚠️ Mode demo: tidak ada gateway pembayaran sungguhan. Tombol di bawah mensimulasikan pembayaran berhasil.</p>
+      <div class="grid sm:grid-cols-2 gap-3">
+        <button onclick="payStep='methods';render()" class="soft-btn py-3 rounded-xl font-semibold">Ganti metode</button>
+        <button onclick="confirmPaid()" class="grad-btn py-3 rounded-xl font-semibold">✅ Saya sudah bayar</button>
+      </div></div>`;
+  }
+  return `<section class="max-w-2xl mx-auto px-4 py-10 fade-in">
+    <button onclick="go('cart')" class="text-sm text-maroon-700 font-semibold mb-4 hover:underline">← Kembali ke keranjang</button>
+    <div class="card p-5 sm:p-8"><h2 class="text-2xl font-bold text-maroon-700 mb-5">💳 Pembayaran</h2>${body}</div></section>`;
+}
+function confirmPaid() {
+  const u = me(); const c = cartGet(u.email); if (!c.length) return go('main');
+  const stock = load('bs_stock', DEF_STOCK);
+  for (const i of c) { if ((stock[i.id] || 0) < i.qty) return toast(`Stok ${i.name} tidak cukup. Ubah jumlah di keranjang.`, 'err'); }
+  const orders = load('bs_orders', []);
+  const id = 'BS' + String(Math.floor(Math.random() * 1e6)).padStart(6, '0');
+  orders.push({ id, email: u.email, name: checkout.name, phone: checkout.phone, items: c.map(i => ({ ...i })), total: cartTotal(c),
+    method: pay.method, methodLabel: METHODS[pay.method].label, va: pay.va, createdAt: Date.now(),
+    delivery: null, address: '', driver: '', status: 'waiting', time: '', stockDeducted: false });
+  save('bs_orders', orders); cartSet(u.email, []);
+  lastOrderId = id; delType = 'pickup'; delDriver = ''; delAddr = '';
+  go('paid');
+}
+const getOrder = id => load('bs_orders', []).find(o => o.id === id);
+function waMsg(o) {
+  return `Halo, saya mengkonfirmasi pemesanan ${o.items.map(i => i.name + ' sebanyak ' + i.qty).join(' dan ')}, Pembayaran berhasil. (No. Pesanan ${o.id})`;
+}
+function waLink(text) { return `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(text)}`; }
+
+function paidView() {
+  const o = getOrder(lastOrderId); if (!o) return '';
+  return `<section class="max-w-xl mx-auto px-4 py-12 text-center fade-in"><div class="card p-8">
+    <div class="text-6xl mb-2">🎉</div>
+    <h2 class="text-2xl font-extrabold text-maroon-700">Pembayaran Berhasil!</h2>
+    <p class="text-coco-600 text-sm mt-1">No. Pesanan <b>#${o.id}</b> · ${rp(o.total)}</p>
+    <ul class="text-sm text-coco-700 my-4 bg-latte-100 rounded-xl p-3 text-left">${o.items.map(i => `<li>• ${esc(i.name)} × ${i.qty}</li>`).join('')}</ul>
+    <div class="grid gap-3">
+      <a href="${waLink(waMsg(o))}" target="_blank" rel="noopener" class="py-3 rounded-xl font-semibold text-white bg-green-600 hover:bg-green-700 transition hover:-translate-y-0.5">💬 Konfirmasi ke WhatsApp</a>
+      <button onclick="go('delivery')" class="grad-btn py-3 rounded-xl font-semibold">Lanjut pilih Pickup / Delivery →</button>
+    </div></div></section>`;
+}
+
+/* ---------- Delivery ---------- */
+const DRIVERS = {
+  gojek: { label: 'Gojek (GoSend)', url: 'https://www.gojek.com/gosend/' },
+  grab: { label: 'Grab (GrabExpress)', url: 'https://www.grab.com/id/express/' }
+};
+function setDel(t) { syncDel(); delType = t; render(); }
+function setDriver(d) { syncDel(); delDriver = d; render(); }
+function syncDel() { const a = $('#dAddr'); if (a) delAddr = a.value; }
+function deliveryView() {
+  const o = getOrder(lastOrderId); if (!o) return '';
+  const card = (t, ic, ttl, sub) => `<button onclick="setDel('${t}')" class="text-left rounded-2xl border-2 p-4 transition ${delType === t ? 'border-maroon-700 bg-maroon-700/10' : 'border-latte-300 bg-latte-100 hover:border-coco-400'}"><div class="text-3xl">${ic}</div><p class="font-bold text-maroon-700">${ttl}</p><p class="text-xs text-coco-600">${sub}</p></button>`;
+  let extra = '';
+  if (delType === 'pickup') extra = `<div class="rounded-2xl overflow-hidden h-56 border border-latte-300 mb-3">
+      <iframe title="Lokasi toko" class="w-full h-full" loading="lazy" src="https://maps.google.com/maps?q=${encodeURIComponent('Jl. Kebun Bunga No.12 Palembang')}&output=embed"></iframe></div>
+      <p class="text-sm text-coco-600 mb-4">📍 ${STORE_ADDRESS}<br>Setelah dikonfirmasi, admin akan menentukan jam pickup.</p>
+      <button onclick="submitDelivery()" class="grad-btn w-full py-3 rounded-xl font-semibold">Konfirmasi Pickup</button>`;
+  else extra = `<label class="text-sm font-semibold text-coco-700">Alamat pengantaran</label>
+      <textarea id="dAddr" rows="3" class="field mt-1 mb-2" placeholder="Tulis alamat lengkap + patokan">${esc(delAddr)}</textarea>
+      <button onclick="syncDel();openMaps()" class="text-sm text-maroon-700 font-semibold hover:underline mb-4">🗺️ Cek alamat di Google Maps</button>
+      <p class="text-sm font-semibold text-coco-700 mb-2">Pilih ojek online:</p>
+      <div class="grid sm:grid-cols-2 gap-3 mb-4">${Object.keys(DRIVERS).map(k => `<button onclick="setDriver('${k}')" class="rounded-xl border-2 p-4 font-semibold transition ${delDriver === k ? 'border-maroon-700 bg-maroon-700/10 text-maroon-700' : 'border-latte-300 bg-latte-100 text-coco-700 hover:border-coco-400'}">🛵 ${DRIVERS[k].label}</button>`).join('')}</div>
+      <button onclick="submitDelivery()" class="grad-btn w-full py-3 rounded-xl font-semibold">Konfirmasi Driver & Hubungi via WhatsApp</button>`;
+  return `<section class="max-w-2xl mx-auto px-4 py-10 fade-in"><div class="card p-5 sm:p-8">
+    <h2 class="text-2xl font-bold text-maroon-700 mb-1">🚚 Pengiriman</h2>
+    <p class="text-sm text-coco-500 mb-5">Pesanan #${o.id} · pilih cara menerima pesananmu.</p>
+    <div class="grid grid-cols-2 gap-3 mb-5">${card('pickup', '🏪', 'Pickup', 'Ambil sendiri di toko')}${card('delivery', '🛵', 'Delivery', 'Diantar ojek online')}</div>
+    ${extra}</div></section>`;
+}
+function openMaps() {
+  if (!delAddr.trim()) return toast('Isi alamat dulu.', 'err');
+  window.open('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(delAddr), '_blank');
+}
+function submitDelivery() {
+  syncDel();
+  const orders = load('bs_orders', []); const o = orders.find(x => x.id === lastOrderId); if (!o) return;
+  if (delType === 'delivery') {
+    if (delAddr.trim().length < 8) return toast('Isi alamat pengantaran dengan lengkap.', 'err');
+    if (!delDriver) return toast('Pilih Gojek atau Grab dulu.', 'err');
+    o.delivery = 'delivery'; o.address = delAddr.trim(); o.driver = DRIVERS[delDriver].label;
+    save('bs_orders', orders);
+    window.open(DRIVERS[delDriver].url, '_blank');
+  } else { o.delivery = 'pickup'; save('bs_orders', orders); }
+  go('final');
+}
+function finalView() {
+  const o = getOrder(lastOrderId); if (!o) return '';
+  const isPick = o.delivery === 'pickup';
+  const drvKey = Object.keys(DRIVERS).find(k => DRIVERS[k].label === o.driver);
+  const wa = isPick ? waLink(waMsg(o)) : waLink(waMsg(o) + ` Pesanan akan diantar via ${o.driver} ke: ${o.address}`);
+  return `<section class="max-w-xl mx-auto px-4 py-12 text-center fade-in"><div class="card p-8">
+    <div class="text-6xl mb-2">${isPick ? '🏪' : '🛵'}</div>
+    <h2 class="text-2xl font-extrabold text-maroon-700 mb-2">Pesanan Diterima!</h2>
+    ${isPick ? `<p class="text-coco-700 text-sm mb-4">Pesanan <b>#${o.id}</b> sudah kami terima dan sedang <b>menunggu konfirmasi admin</b> mengenai jam berapa pesanan bisa di-pickup. Pantau statusnya di Riwayat Pemesanan.</p>
+      <p class="text-xs text-coco-500 mb-5">📍 ${STORE_ADDRESS}</p>`
+      : `<p class="text-coco-700 text-sm mb-4">Pesanan <b>#${o.id}</b> akan diantar via <b>${esc(o.driver)}</b> ke:<br><i>${esc(o.address)}</i><br>Silakan hubungi admin lewat WhatsApp untuk koordinasi driver.</p>`}
+    <div class="grid gap-3">
+      ${isPick ? '' : `<a href="${wa}" target="_blank" rel="noopener" class="py-3 rounded-xl font-semibold text-white bg-green-600 hover:bg-green-700 transition">💬 Hubungi via WhatsApp</a>
+      <a href="${DRIVERS[drvKey].url}" target="_blank" rel="noopener" class="soft-btn py-3 rounded-xl font-semibold">Buka ${DRIVERS[drvKey].label}</a>`}
+      <button onclick="go('main','riwayat')" class="grad-btn py-3 rounded-xl font-semibold">📜 Lihat Riwayat Pemesanan</button>
+      <button onclick="go('main','products')" class="soft-btn py-3 rounded-xl font-semibold">Pesan lagi</button>
+    </div></div></section>`;
+}
+
+/* =========================================================
+   HALAMAN ADMIN (terpisah total dari tampilan customer)
+   ========================================================= */
+function adminView() {
+  const stock = load('bs_stock', DEF_STOCK);
+  const orders = load('bs_orders', []).sort((a, b) => b.createdAt - a.createdAt);
+  const cnt = s => orders.filter(o => o.status === s).length;
+  const stats = [['Total Pesanan', orders.length, 'from-maroon-700 to-maroon-600'], ['Waiting', cnt('waiting'), 'from-yellow-500 to-yellow-400'], ['Approved', cnt('approved'), 'from-green-700 to-green-500'], ['Declined', cnt('declined'), 'from-red-700 to-red-500']];
+  const stockCards = PRODUCTS.map(p => { const s = stock[p.id] || 0; const pct = Math.min(100, Math.round(s / DEF_STOCK[p.id] * 100));
+    return `<div class="card p-4"><div class="flex items-center justify-between"><span class="font-bold text-maroon-700">${p.emoji} ${p.name}</span><span class="text-2xl font-extrabold text-maroon-700">${s}</span></div>
+      <div class="h-2 rounded-full bg-latte-300 my-2 overflow-hidden"><div class="h-full rounded-full bg-gradient-to-r from-maroon-700 to-coco-400" style="width:${pct}%"></div></div>
+      <div class="flex gap-2 items-center"><input id="stk-${p.id}" type="number" min="0" value="${s}" class="field !py-1.5"><button onclick="setStock('${p.id}')" class="grad-btn px-3 py-1.5 rounded-lg text-xs font-semibold">Simpan</button></div></div>`; }).join('');
+  const list = orders.length ? orders.map(o => `
+    <div class="card p-5 fade-in">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <div><span class="text-lg font-bold text-maroon-700">#${o.id}</span> <span class="text-xs text-coco-500">· ${fmtDate(o.createdAt)}</span></div>
+        ${statusPill(o.status)}
+      </div>
+      <div class="grid md:grid-cols-2 gap-4 text-sm">
+        <div><p class="font-semibold text-coco-700 mb-1">Pesanan</p>
+          <ul class="space-y-1">${o.items.map(i => `<li class="bg-latte-100 rounded-lg px-3 py-2"><b>${esc(i.name)}</b> × <b class="text-maroon-700">${i.qty}</b>${i.note ? `<br><span class="text-xs italic text-coco-500">📝 ${esc(i.note)}</span>` : ''}</li>`).join('')}</ul>
+          <p class="mt-2">Total: <b class="text-maroon-700">${rp(o.total)}</b> · ${esc(o.methodLabel)} <span class="pill bg-green-600 text-white ml-1">Lunas</span></p></div>
+        <div><p class="font-semibold text-coco-700 mb-1">Customer</p>
+          <p>👤 ${esc(o.name)} <span class="text-coco-500 text-xs">(${esc(o.email)})</span></p>
+          <p>📞 <a class="underline text-maroon-700" target="_blank" href="https://wa.me/${esc(o.phone.replace(/\D/g, '').replace(/^0/, '62'))}">${esc(o.phone)}</a></p>
+          <p class="mt-1">${o.delivery === 'pickup' ? '🏪 <b>Pickup</b> di toko' : o.delivery === 'delivery' ? `🛵 <b>Delivery</b> via ${esc(o.driver)}<br>📍 ${esc(o.address)}` : '<span class="text-coco-500">Belum memilih pickup/delivery</span>'}</p></div>
+      </div>
+      <div class="mt-4 pt-4 border-t border-latte-300 flex flex-wrap items-end gap-4">
+        <div><label class="text-xs font-semibold text-coco-700">Jam ${o.delivery === 'delivery' ? 'diantar' : 'bisa diambil'} (WIB)</label>
+          <input id="t-${o.id}" type="time" value="${esc(o.time)}" onchange="setTime('${o.id}', this.value)" class="field !py-1.5 mt-1" style="width:9rem"></div>
+        <div class="flex flex-wrap gap-2">
+          ${['waiting', 'approved', 'declined'].map(s => `<button onclick="setStatus('${o.id}','${s}')" class="stbtn ${s} ${o.status === s ? 'on' : ''}">${s === 'waiting' ? '⏳ Waiting' : s === 'approved' ? '✅ Approved' : '❌ Declined'}</button>`).join('')}
+        </div>
+      </div>
+    </div>`).join('') : `<div class="card p-10 text-center text-coco-500">Belum ada pesanan masuk.</div>`;
+  return `<section class="max-w-6xl mx-auto px-4 py-8 fade-in">
+    <div class="mb-6"><h1 class="text-3xl font-extrabold text-maroon-700">Dashboard Admin</h1><p class="text-coco-600 text-sm">Kelola stok dan konfirmasi pesanan customer Bitesable.</p></div>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">${stats.map(s => `<div class="rounded-2xl p-4 text-white bg-gradient-to-br ${s[2]} shadow-lg"><p class="text-xs opacity-90">${s[0]}</p><p class="text-3xl font-extrabold">${s[1]}</p></div>`).join('')}</div>
+    <h2 class="text-xl font-bold text-maroon-700 mb-3">📦 Stok Tersedia</h2>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">${stockCards}</div>
+    <h2 class="text-xl font-bold text-maroon-700 mb-3">🧾 Pesanan Masuk</h2>
+    <div class="space-y-4">${list}</div>
+  </section>${footerHTML()}`;
+}
+function setStatus(id, s) {
+  const orders = load('bs_orders', []); const o = orders.find(x => x.id === id); if (!o) return;
+  const stock = load('bs_stock', DEF_STOCK);
+  if (s === 'approved') {
+    const t = ($('#t-' + id) || {}).value || o.time;
+    if (!t) return toast('Isi jam antar/ambil dulu sebelum Approve.', 'err');
+    if (!o.stockDeducted) {
+      for (const i of o.items) if ((stock[i.id] || 0) < i.qty) return toast(`Stok ${i.name} tidak cukup (sisa ${stock[i.id] || 0}).`, 'err');
+      o.items.forEach(i => stock[i.id] -= i.qty); o.stockDeducted = true;
+    }
+    o.time = t;
+  } else if (o.stockDeducted) { o.items.forEach(i => stock[i.id] += i.qty); o.stockDeducted = false; }
+  o.status = s; save('bs_orders', orders); save('bs_stock', stock); render();
+  toast(`Pesanan #${id} → ${s}`);
+}
+function setTime(id, v) {
+  const orders = load('bs_orders', []); const o = orders.find(x => x.id === id); if (!o) return;
+  o.time = v; save('bs_orders', orders);
+  if (o.status === 'approved') toast('Jam diperbarui.');
+}
+function setStock(pid) {
+  const v = parseInt($('#stk-' + pid).value); if (isNaN(v) || v < 0) return toast('Isi stok dengan angka valid.', 'err');
+  const stock = load('bs_stock', DEF_STOCK); stock[pid] = v; save('bs_stock', stock); render(); toast('Stok diperbarui.');
+}
+
+/* =========================================================
+   ASISTEN AI "BITA" (berbasis aturan/NLP sederhana, jalan offline)
+   ========================================================= */
+function renderChat() {
+  const box = $('#chatBox'); if (!box) return;
+  box.innerHTML = chatLog.map(m => m.role === 'bot'
+    ? `<div class="flex"><div class="chat-bubble bg-white/80 text-coco-700 border border-latte-300">${m.html}</div></div>`
+    : `<div class="flex justify-end"><div class="chat-bubble grad-btn">${m.html}</div></div>`).join('');
+  box.scrollTop = box.scrollHeight;
+}
+function askChip(btn) { $('#chatIn').value = btn.textContent; sendChat(); }
+function sendChat() {
+  const inp = $('#chatIn'); const q = inp.value.trim(); if (!q) return false;
+  chatLog.push({ role: 'user', html: esc(q) }); inp.value = ''; renderChat();
+  chatLog.push({ role: 'bot', html: '<i>Bita sedang mengetik...</i>' }); renderChat();
+  setTimeout(() => { chatLog.pop(); chatLog.push({ role: 'bot', html: aiAnswer(q) }); renderChat(); }, 550);
+  return false;
+}
+function detectProducts(t) {
+  const r = [];
+  const noFrozen = t.replace(/cireng\s*frozen/g, '');
+  if (/frozen|beku/.test(t)) r.push(getP('cireng-frozen'));
+  if (/cireng/.test(noFrozen)) r.unshift(getP('cireng'));
+  if (/dim\s?sum/.test(t)) r.push(getP('dimsum'));
+  if (/risol|risoles/.test(t)) r.push(getP('risol'));
+  return r;
+}
+function aiAnswer(q) {
+  const t = q.toLowerCase().trim(); const stock = load('bs_stock', DEF_STOCK);
+  const ps = detectProducts(t); const list = ps.length ? ps : PRODUCTS; const has = re => re.test(t);
+  const each = fn => list.map(fn).join('<br>');
+  const bm = t.match(/(\d[\d\.]*)\s*(rb|ribu|k)\b/) || t.match(/rp\.?\s*(\d[\d\.]*)/);
+
+  if (has(/^(hai|halo|hi|hello|assalam|selamat|pagi|siang|sore|malam)/) && t.length < 25) return 'Halo juga! 👋 Mau tanya soal harga, stok, cara masak, atau butuh rekomendasi cemilan?';
+  if (has(/terima kasih|makasih|thanks|thx|tengkyu/)) return 'Sama-sama! 😊 Selamat menikmati cemilannya ya.';
+
+  if (bm && has(/budget|uang|rp|rb|ribu|cukup|dapat|dapet|bawa|punya|harga/)) {
+    let amt = parseFloat(bm[1].replace(/\./g, '')); if (/rb|ribu|k/.test(bm[2] || '')) amt *= 1000;
+    const aff = PRODUCTS.filter(p => p.price <= amt).sort((a, b) => b.price - a.price);
+    if (!aff.length) return `Dengan budget ${rp(amt)}, belum cukup untuk satu produk. Harga termurah kami <b>${rp(Math.min(...PRODUCTS.map(p => p.price)))}</b> (${PRODUCTS.sort((a, b) => a.price - b.price)[0].name}).`;
+    let left = amt, combo = [];
+    [...aff].sort((a, b) => a.price - b.price).forEach(p => { if (left >= p.price) { combo.push(p); left -= p.price; } });
+    return `Dengan budget <b>${rp(amt)}</b> kamu bisa pilih satu produk seperti ${aff.map(p => p.name).join(', ')}.<br>Kalau mau variasi: <b>${combo.map(p => p.name).join(' + ')}</b> = ${rp(amt - left)}${left ? ` (sisa ${rp(left)})` : ''}. 😋`;
+  }
+  if (has(/stok|stock|tersedia|ready|sisa|habis|masih ada/)) return each(p => `${p.emoji} <b>${p.name}</b>: ${stock[p.id] > 0 ? `stok ${stock[p.id]} ${p.unit}` : 'sedang habis'}`) + '<br><span class="text-xs">Stok diperbarui langsung oleh admin.</span>';
+  if (has(/cara (masak|goreng|kukus|olah|saji|buat)|masak|goreng|kukus|panaskan|penyajian|dimasak|digoreng|dikukus|air fryer/)) return each(p => `${p.emoji} <b>${p.name}</b>: ${p.cara}`);
+  if (has(/simpan|tahan|awet|kadaluarsa|kedaluwarsa|expired|basi|freezer|kulkas|lemari es|disimpan/)) return each(p => `${p.emoji} <b>${p.name}</b>: ${p.simpan}.`);
+  if (has(/halal/)) return 'Untuk informasi komposisi lengkap dan sertifikasi, silakan tanyakan langsung ke admin lewat WhatsApp di bagian About Us ya, supaya jawabannya akurat. 🙏';
+  if (has(/isi|bahan|komposisi|rasa|varian|terbuat|dibuat dari|apa itu|pedas/)) return each(p => `${p.emoji} <b>${p.name}</b> (${p.isi}): dibuat dari ${p.bahan}. Rasa: ${p.rasa}.`);
+  if (has(/harga|berapa|price|biaya|mahal|murah/)) return each(p => `${p.emoji} <b>${p.name}</b>: ${rp(p.price)} / ${p.unit} (${p.isi})`);
+  if (has(/rekomendasi|rekomen|saran|enak|terlaris|best|favorit|bingung|cocok/)) {
+    if (has(/stok|simpan|freezer|awet|nanti|praktis/)) return '❄️ Untuk stok di rumah, aku sarankan <b>Cireng Frozen</b>: awet di freezer dan tinggal goreng.';
+    if (has(/acara|arisan|rapat|pesta|bareng|banyak/)) return '🎉 Untuk acara, kombinasi <b>Cireng + Dimsum + Risol</b> cocok: ada gurih renyah, lembut, dan creamy. Kamu bisa catat jumlahnya di keterangan pesanan.';
+    return 'Favorit pelanggan: <b>Cireng</b> (renyah, pedas manis) untuk ngemil, <b>Dimsum</b> untuk yang suka lembut, <b>Risol</b> untuk yang suka creamy. Sebutkan budget-mu, nanti aku hitungkan kombinasinya! 😄';
+  }
+  if (has(/bayar|pembayaran|qris|transfer|virtual|\bva\b|tunai|bca|bni|bri|mandiri/)) return 'Pembayaran nontunai: <b>QRIS</b> atau Virtual Account <b>Mandiri, BCA, BNI, BRI</b>. Setelah bayar, tekan tombol konfirmasi ke WhatsApp admin.';
+  if (has(/antar|delivery|kirim|pickup|pick up|ambil|gojek|grab|ongkir|gosend/)) return 'Ada dua pilihan: <b>Pickup</b> di toko (jam diambil ditentukan admin) atau <b>Delivery</b> via <b>Gojek/Grab</b> yang terhubung ke WhatsApp admin. Ongkir mengikuti tarif ojek online.';
+  if (has(/pesan|order|beli|checkout|keranjang/)) return 'Cara pesan: 1) Masuk/daftar, 2) klik <b>Pesan</b> pada produk, atur jumlah & catatan, 3) <b>Tambahkan ke Keranjang</b>, 4) buka keranjang → <b>Lanjut Pembayaran</b>, 5) pilih pickup/delivery.';
+  if (has(/alamat|lokasi|dimana|di mana|buka|jam|tutup|maps|wa\b|whatsapp|kontak/)) return `📍 ${STORE_ADDRESS}<br>🕘 Buka setiap hari 08.00–20.00 WIB<br>📱 WhatsApp: +${WA_NUMBER}`;
+  if (ps.length) return each(p => `${p.emoji} <b>${p.name}</b> – ${rp(p.price)} / ${p.unit}.<br>${p.desc}<br>Isi: ${p.isi}. Stok: ${stock[p.id]}.`);
+  return 'Maaf, aku belum paham maksudnya 🙏. Coba tanya tentang <b>harga, stok, isi/bahan, cara masak, cara simpan, rekomendasi, pembayaran, atau pengiriman</b>. Contoh: “Cara goreng cireng frozen?” atau “Budget 40rb beli apa?”';
+}
+
+/* ---------- Sinkronisasi antar-tab (admin ↔ customer) ---------- */
+window.addEventListener('storage', () => {
+  const u = me(); if (!u) return;
+  if (u.role === 'admin') render(); else if (view === 'main') renderRiwayat();
+});
+
+render();
+</script>
+</body>
+</html>
